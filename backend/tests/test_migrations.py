@@ -114,10 +114,14 @@ class MigrationsMatchModels(unittest.TestCase):
         # DATABASE_URL перекрывает FC_DB_*: env.py возьмёт именно его и
         # не пойдёт в базу разработчика.
         with isolated_env(**{**NO_DATABASE, "DATABASE_URL": url}):
-            cfg = Config(str(INI))
-            # `script_location` в ini задан относительным путём и
-            # разрешается от текущего каталога. Тесты обычно запускают из
-            # корня, но не обязаны — подставляем абсолютный.
+            # Config без пути к alembic.ini: сам файл здесь не нужен —
+            # script_location подставляется явно строкой ниже. Загружать
+            # ini всё равно нельзя: alembic читает его с encoding="locale"
+            # (alembic/util/compat.py), а на русской Windows системная
+            # кодировка — cp1251, и UTF-8 файл падает с UnicodeDecodeError
+            # на первом же кириллическом комментарии. На Linux в CI не
+            # ловится — там локаль обычно UTF-8.
+            cfg = Config()
             cfg.set_main_option("script_location", str(ALEMBIC_DIR))
             command.upgrade(cfg, "head")
 
