@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#17231B">
+<!--SEO-->
+<link rel="stylesheet" href="/style.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body>
+
+<a class="skip" href="#main">Перейти к содержимому</a>
+
+<div class="topbar"><div class="wrap trow">
+  <div id="topInfo">Ежедневно 08:00–22:00 · Доставка: Южное Бутово, Коммунарка — 200 ₽, бесплатно от 2 000 ₽</div>
+  <div>
+    <a href="tel:+74951204567" id="topPhone">+7 (495) 120-45-67</a>
+    <span class="sep" aria-hidden="true">·</span>
+    <a href="/admin" target="_blank" rel="noopener">Панель администратора</a>
+  </div>
+</div></div>
+
+<header>
+  <div class="wrap">
+    <div class="hrow">
+      <button class="logo" data-nav="/" aria-label="FructCity — на главную">
+        <span class="mark" aria-hidden="true"><svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3D2415" stroke-width="1.8" stroke-linecap="round"><path d="M4 20c8-1 14-7 15-15C11 6 5 12 4 20Z"/><path d="M9 15c2-2 4-4 8-7"/></svg></span>
+        <span><span class="wm">Fruct<span>City</span></span><span class="tag">продуктовый магазин</span></span>
+      </button>
+
+      <div class="search">
+        <span class="ic" aria-hidden="true"><svg class="i" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <label class="sr-only" for="q">Поиск товаров</label>
+        <input id="q" type="search" placeholder="помидоры, авокадо, хлеб…" autocomplete="off">
+      </div>
+
+      <button class="cartbtn ghost" id="btnAccount" aria-label="Личный кабинет">
+        <svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>
+      </button>
+
+      <button class="cartbtn" id="btnCart" aria-label="Корзина">
+        <svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/><path d="M2.5 3h2l2.6 12.2a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.6L21 8H6"/></svg>
+        <span>Корзина</span><span class="cnt" id="cartCount">0</span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Содержимое для поисковых роботов и режима без JS (ТЗ 15.3, 15.4) -->
+  <noscript><div class="wrap legal"><!--NOSCRIPT--></div></noscript>
+  <!-- aria-live здесь не нужен: при смене раздела скринридер зачитывал бы
+       страницу целиком. Об изменениях сообщает #toast (ТЗ 15.4). -->
+  <div id="view"></div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="fintro">FructCity — продуктовый магазин у дома: свежие фрукты, овощи, ягоды и фермерские
+      продукты с доставкой по району за 2 часа. Весовые товары взвешиваются при сборке — вы платите по факту.</p>
+  </div>
+  <div class="wrap fgrid">
+    <nav aria-label="Каталог"><h4>Каталог</h4>
+      <a href="/catalog" data-nav="/catalog">Весь каталог</a>
+      <a href="/catalog/sale" data-nav="/catalog/sale">Акции</a>
+      <a href="/catalog/fruit" data-nav="/catalog/fruit">Фрукты</a>
+      <a href="/catalog/veg" data-nav="/catalog/veg">Овощи</a>
+      <a href="/catalog/meat" data-nav="/catalog/meat">Мясо по предзаказу</a>
+    </nav>
+    <nav aria-label="Покупателям"><h4>Покупателям</h4>
+      <a href="/profile" data-nav="/profile">Личный кабинет</a>
+      <a href="/cart" data-nav="/cart">Корзина</a>
+      <a href="/policy" data-nav="/policy">Политика конфиденциальности</a>
+      <a href="/offer" data-nav="/offer">Публичная оферта</a>
+    </nav>
+    <nav aria-label="О компании"><h4>О компании</h4>
+      <a href="/catalog" data-nav="/catalog">О магазине</a>
+      <a href="/admin" target="_blank" rel="noopener">Панель администратора</a>
+      <a href="/sitemap.xml">Карта сайта</a>
+    </nav>
+    <div><h4>Контакты</h4>
+      <a href="tel:+74951204567" id="footPhone">+7 (495) 120-45-67</a>
+      <a href="mailto:info@fructcity.ru" id="footEmail">info@fructcity.ru</a>
+      <span class="li" id="footAddr">Москва, Южное Бутово, ул. Адмирала Лазарева, 53</span>
+      <span class="li" id="footHours">Ежедневно 08:00–22:00</span>
+    </div>
+  </div>
+  <div class="wrap fbot">
+    <span id="footReq">ИП Фруктов И.В. · ИНН 770000000000 · ОГРНИП 320770000000000</span>
+    <span>© 2026 FructCity</span>
+  </div>
+</footer>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet" id="sheet"></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/lib/calc.js"></script>
+<script src="/app.js"></script>
+</body>
+</html>

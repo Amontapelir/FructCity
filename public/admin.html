@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Панель управления — FructCity</title>
+<link rel="stylesheet" href="/style.css">
+<link rel="stylesheet" href="/admin.css">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+</head>
+<body class="admin">
+
+<div id="login" class="login-wrap" hidden>
+  <form class="login-card" id="loginForm" autocomplete="on">
+    <div class="login-logo">
+      <span class="mark" aria-hidden="true"><svg class="i" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3D2415" stroke-width="1.8" stroke-linecap="round"><path d="M4 20c8-1 14-7 15-15C11 6 5 12 4 20Z"/><path d="M9 15c2-2 4-4 8-7"/></svg></span>
+      <div><b>FructCity</b><small>панель управления</small></div>
+    </div>
+    <label class="f" for="loginInput">Логин</label>
+    <input class="t" id="loginInput" name="username" autocomplete="username" required maxlength="64">
+    <label class="f" for="password">Пароль</label>
+    <input class="t" id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+    <div class="err-msg" id="loginErr" role="alert"></div>
+    <button class="btn" type="submit" id="loginBtn">Войти</button>
+    <p class="hint" style="margin-top:14px">Доступ только для сотрудников магазина.
+      Пароли выдаёт администратор при первом запуске сервера.</p>
+  </form>
+</div>
+
+<div class="shell" id="shell" hidden>
+  <aside class="sidebar">
+    <div class="sb-logo">
+      <span class="mark" aria-hidden="true"><svg class="i" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3D2415" stroke-width="1.8" stroke-linecap="round"><path d="M4 20c8-1 14-7 15-15C11 6 5 12 4 20Z"/><path d="M9 15c2-2 4-4 8-7"/></svg></span>
+      <div><b>FructCity</b><small>панель управления</small></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Разделы"></nav>
+    <div class="sb-foot">
+      <a href="/" target="_blank" rel="noopener">
+        <svg class="i" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><path d="M15 3h6v6"/><path d="M10 14 21 3"/></svg>
+        <span>Открыть витрину</span></a>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar-admin">
+      <h1 id="ptitle">Дашборд</h1>
+      <div class="who">
+        <span id="whoName"></span>
+        <span class="badge gray" id="whoRole"></span>
+        <button class="btn ghost sm" id="logoutBtn">Выйти</button>
+      </div>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<div class="ov" id="ov" role="dialog" aria-modal="true"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/lib/calc.js"></script>
+<script src="/admin.js"></script>
+</body>
+</html>

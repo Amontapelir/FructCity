@@ -1,0 +1,41 @@
+name: Дефект
+description: Что-то работает не так, как должно
+labels: ["дефект"]
+body:
+  - type: textarea
+    id: what-breaks
+    attributes:
+      label: Что ломается в жизни
+      description: >-
+        Не «ошибка в функции X», а что видит человек: покупатель, сборщик,
+        администратор. По этому описанию потом пишется сообщение assert-а.
+      placeholder: Покупатель оформляет заказ на последний товар и получает 500.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Как воспроизвести
+      placeholder: |
+        1. Остаток товара 1
+        2. Два покупателя одновременно оформляют заказ
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: where
+    attributes:
+      label: Где, если известно
+      description: Файл и слой — домен, роутер, хранилище, витрина.
+      placeholder: backend/app/domain/shop.py, place_order
+
+  - type: textarea
+    id: test
+    attributes:
+      label: Каким тестом закрывается
+      description: >-
+        Правило проекта: найден дефект — тест рядом с тем слоем, где он жил,
+        и тест обязан краснеть без исправления. Если непонятно, каким именно, —
+        так и напишите, разберёмся при работе.

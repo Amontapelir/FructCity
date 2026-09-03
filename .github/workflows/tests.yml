@@ -1,0 +1,89 @@
+# Прогон тестов на каждый push и pull request.
+#
+# Зачем это нужно помимо локального прогона: на машине разработчика
+# Windows, и часть проверок там молча пропускается — символические
+# ссылки требуют прав, а тест гонки на последнем товаре ищет PostgreSQL.
+# Здесь Linux и настоящая база, поэтому набор выполняется целиком.
+#
+# Правило простое: красный прогон — не вливаем.
+
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unittest:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fructcity
+        ports:
+          - 5432:5432
+        # Без health-check шаги начнутся раньше, чем база примет
+        # соединение, и первый же тест упадёт не по делу.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      FC_DB_HOST: 127.0.0.1
+      FC_DB_PORT: "5432"
+      FC_DB_NAME: fructcity
+      FC_DB_USER: postgres
+      FC_DB_PASSWORD: postgres
+      # Тесту гонки нужно право создавать свою базу — оно есть у
+      # postgres, и отдельная административная запись здесь не нужна.
+      FC_WRITE_ENABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      # Node нужен НЕ как сервер — серверная Node-версия удалена. Он
+      # исполняет `lib/calc.js` (расчётное ядро браузера), чтобы сверить
+      # формулы с `domain/calc.py`. Без него эта сверка молча
+      # пропускается, и витрина может начать считать деньги иначе, чем
+      # сервер, — см. test_calc_matches_browser.py.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Установить зависимости
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Создать схему
+        run: python -m backend.app.db.models --create
+
+      - name: Тесты
+        run: python -m unittest discover -s backend/tests -t . -v
+
+  secrets-guard:
+    # Отдельной работой, чтобы отказ было видно сразу и отдельно от
+    # тестов: попавший в историю пароль или телефон покупателя оттуда
+    # уже не убрать обычным удалением файла.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: В истории не должно быть .env и данных магазина
+        run: |
+          if git ls-files | grep -E '^\.env$|^data/'; then
+            echo "::error::в репозиторий попали секреты или персональные данные"
+            exit 1
+          fi
+          echo "чисто"

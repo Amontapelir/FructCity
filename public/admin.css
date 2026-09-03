@@ -1,0 +1,168 @@
+/* =====================================================================
+   Админ-панель (ТЗ 10). Те же токены, что и на витрине; сайдбар —
+   на тон светлее тёмно-зелёного витрины, контраст проверен по WCAG AA.
+   ===================================================================== */
+body.admin{background:var(--bg)}
+
+/* Атрибут hidden обязан работать.
+   Браузер прячет элементы правилом [hidden]{display:none} из встроенной
+   таблицы стилей, но ЛЮБОЕ авторское правило её перебивает. У `.login-wrap`
+   и `.shell` стоит display:flex, поэтому `элемент.hidden = true` из JS
+   не давал никакого эффекта: после входа форма оставалась на экране,
+   а панель управления просто дорисовывалась под ней. */
+[hidden]{display:none !important}
+
+/* ---------- вход ---------- */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--surface-dark)}
+.login-card{background:#fff;border-radius:var(--r-lg);padding:28px;width:100%;max-width:380px;box-shadow:var(--sh-lg);border-top:4px solid var(--gold)}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.login-logo .mark{width:34px;height:34px;border-radius:7px;background:var(--gold);display:flex;align-items:center;justify-content:center}
+.login-logo b{display:block;font-size:16px}
+.login-logo small{display:block;font-size:11px;color:var(--ink-3)}
+.hint{font-size:11.5px;color:var(--ink-3);line-height:1.5}
+
+/* ---------- каркас ---------- */
+.shell{display:flex;min-height:100vh;align-items:stretch}
+.sidebar{width:var(--sbw);flex-shrink:0;background:var(--sidebar-bg);color:#D8D3C9;display:flex;flex-direction:column;
+  position:sticky;top:0;height:100vh;border-top:3px solid var(--gold)}
+.sb-logo{display:flex;align-items:center;gap:9px;padding:18px 18px 14px}
+.sb-logo .mark{width:28px;height:28px;border-radius:6px;background:var(--gold);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-logo b{color:#fff;font-size:15.5px;font-weight:700}
+.sb-logo small{display:block;font-size:10.5px;color:#B0A99A;font-weight:500}
+.nav{flex:1;padding:6px 10px;overflow-y:auto}
+.nav a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:var(--r-sm);color:#C9C3B5;
+  text-decoration:none;font-size:13.5px;cursor:pointer;border-left:2.5px solid transparent;margin-bottom:1px}
+.nav a:hover{background:rgba(255,255,255,.06);color:#fff}
+.nav a.on{background:rgba(76,175,80,.18);color:#fff;border-left-color:var(--green);font-weight:600}
+.sb-foot{padding:14px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:12px}
+.sb-foot a{color:var(--gold);text-decoration:none;font-weight:600;display:flex;align-items:center;gap:7px}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar-admin{background:#fff;border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:14px;
+  position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar-admin h1{font-size:18px;margin:0;flex:1;font-weight:700}
+.who{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--ink-2)}
+.content{padding:22px 24px 60px;flex:1}
+
+/* ---------- панели ---------- */
+.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+.panel h3{margin:0 0 12px;font-size:15px;font-weight:700}
+.panel + .panel{margin-top:14px}
+.ptools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.ptools .grow{flex:1;min-width:160px}
+
+/* ---------- KPI ---------- */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:15px;box-shadow:var(--sh);border-top:3px solid var(--gold)}
+.kpi b{display:block;font-size:23px;letter-spacing:-.4px}
+.kpi span{font-size:12px;color:var(--ink-3)}
+
+/* ---------- таблицы ---------- */
+table.dt{width:100%;border-collapse:collapse;font-size:13px}
+table.dt th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);
+  padding:8px 10px;border-bottom:1px solid var(--line);font-weight:700;white-space:nowrap}
+table.dt td{padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.dt tr:last-child td{border-bottom:0}
+table.dt tr.row:hover{background:#FAFAF8;cursor:pointer}
+table.dt .ph{width:34px;height:34px;border-radius:var(--r-sm);background:#F1F0EC;display:flex;align-items:center;
+  justify-content:center;font-size:16px;overflow:hidden}
+table.dt .ph img{width:100%;height:100%;object-fit:cover;display:block}
+table.dt .ph .e{filter:grayscale(1);opacity:.55}
+.sku{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;color:var(--ink-3)}
+.strike{text-decoration:line-through;color:var(--ink-3);font-size:11.5px}
+.muted{color:var(--ink-3)}
+.tbl-wrap{overflow-x:auto}
+
+/* ---------- карточки товара в админке ---------- */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px}
+.pcard{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:11px;box-shadow:var(--sh);display:flex;flex-direction:column}
+.pcard.off{opacity:.6}
+.pthumb{aspect-ratio:1;border-radius:var(--r-sm);background:#F1F0EC;display:flex;align-items:center;justify-content:center;
+  font-size:32px;margin-bottom:9px;position:relative;overflow:hidden}
+.pthumb img{width:100%;height:100%;object-fit:cover;display:block}
+.pthumb .e{filter:grayscale(1);opacity:.5}
+.ptags{position:absolute;top:6px;left:6px;display:flex;flex-direction:column;gap:3px;align-items:flex-start}
+.pname{font-size:13px;font-weight:600;line-height:1.3;margin-bottom:3px}
+.pmeta{font-size:11px;color:var(--ink-3);margin-bottom:6px}
+.pprice{font-size:15px;font-weight:700;margin-top:auto;margin-bottom:8px}
+.pactions{display:flex;gap:6px}
+.pactions button{flex:1}
+
+/* ---------- элементы управления ---------- */
+.btn.gh{background:#fff;color:var(--ink-2);border:1px solid var(--line)}
+.btn.gh:hover:not([disabled]){background:var(--bg)}
+/* активный режим списка: инлайн-стиль здесь не годится — шаблон h`` его экранирует */
+.btn.gh.on{border-color:var(--green-d);color:var(--green-tx);background:var(--green-soft);font-weight:700}
+.btn.dk{background:var(--surface-dark);border-color:var(--surface-dark);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.iconbtn{border:1px solid var(--line);background:#fff;width:28px;height:28px;border-radius:var(--r-sm);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;color:var(--ink-2)}
+.iconbtn:hover:not([disabled]){background:var(--bg)}
+.iconbtn[disabled]{opacity:.35;cursor:not-allowed}
+.rowbtns{display:flex;gap:5px}
+.sw{position:relative;display:inline-block;width:34px;height:20px;flex-shrink:0;cursor:pointer}
+.sw input{opacity:0;width:0;height:0}
+.sw .tr{position:absolute;inset:0;background:var(--line);border-radius:99px;transition:.15s}
+.sw .tr::before{content:"";position:absolute;width:15px;height:15px;left:2.5px;top:2.5px;background:#fff;border-radius:99px;
+  transition:.15s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.sw input:checked + .tr{background:var(--green-d)}
+.sw input:checked + .tr::before{transform:translateX(14px)}
+.sw input:focus-visible + .tr{outline:2px solid var(--green-d);outline-offset:2px}
+
+/* ---------- конструктор главной ---------- */
+.hb-list{display:flex;flex-direction:column;gap:6px}
+.hb-row{display:flex;align-items:center;gap:12px;padding:9px 11px;border:1px solid var(--line);border-radius:var(--r-sm)}
+.hb-arrows{display:flex;gap:4px;flex-shrink:0}
+.hb-name{flex:1;font-size:13.5px;font-weight:600}
+
+/* ---------- карточка заказа ---------- */
+.oi{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.oi:last-of-type{border-bottom:0}
+.oi .ph{width:42px;height:42px;border-radius:var(--r-sm);background:#F1F0EC;display:flex;align-items:center;
+  justify-content:center;font-size:19px;flex-shrink:0;overflow:hidden}
+.oi .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.oi .ph .e{filter:grayscale(1);opacity:.55}
+.oi .in{flex:1;min-width:160px}
+.oi .in b{display:block;font-size:13px}
+.oi .in small{color:var(--ink-3);font-size:11.5px}
+.oi .rt{text-align:right;font-weight:700;font-size:13.5px}
+.hist{font-size:12px;color:var(--ink-2)}
+.hist div{padding:4px 0;border-bottom:1px dashed var(--line)}
+.hist div:last-child{border-bottom:0}
+
+.mfoot{display:flex;gap:8px;justify-content:flex-end;padding-top:14px;border-top:1px solid var(--line);margin-top:16px;flex-wrap:wrap}
+.mfoot .btn{width:auto;margin:0;padding:9px 16px}
+
+@media(max-width:1000px){.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:760px){
+  .sidebar{width:72px}
+  .sb-logo b,.sb-logo small,.nav a span,.sb-foot span{display:none}
+  .nav a{justify-content:center}
+  .sb-logo{justify-content:center;padding:16px 8px}
+  .content{padding:16px 14px 50px}
+  .topbar-admin{padding:12px 14px}
+  .frow{grid-template-columns:1fr}
+  .charts-2{grid-template-columns:1fr}
+}
+
+/* ---------- графики ----------
+   SVG рисуется в единицах viewBox и растягивается по ширине панели:
+   так один и тот же график читается и на 1400px, и на планшете, и не
+   требует пересчёта при изменении размера окна. */
+.chart{display:block;width:100%;height:auto;overflow:visible}
+.charts-2{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:14px;margin-top:14px}
+.charts-2 > .panel{margin-top:0}
+.chart-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.donut{width:170px;height:170px;flex-shrink:0}
+.legend{list-style:none;margin:0;padding:0;flex:1;min-width:150px}
+.legend li{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0}
+.legend i{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.legend span{flex:1;color:var(--ink-2)}
+.legend b{font-weight:700}
+.legend em{font-style:normal;color:var(--ink-3);width:38px;text-align:right}
+
+/* Таблица-дублёр под графиком: те же числа словами.
+   Диаграмма недоступна скринридеру, поэтому цифры обязаны быть
+   и текстом — но глазами их дублировать незачем, отсюда мелкий
+   приглушённый вид, а не скрытие: так их можно и скопировать. */
+.sr-table{margin-top:12px;font-size:12px;color:var(--ink-3)}
+.sr-table td{padding:3px 6px}
