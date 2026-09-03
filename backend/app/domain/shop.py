@@ -284,7 +284,8 @@ def place_order(state: dict[str, Any], *, next_id: Callable[[str], int],
         work_from=int(C.num(s.get("work_from"))),
         work_to=int(C.num(s.get("work_to"))),
         cutoff_h=s.get("cutoff_h"), capacity=capacity,
-        booked=booking_map(state, data.get("method")))
+        booked=booking_map(state, data.get("method")),
+        holidays=s.get("holidays") or [])
     slot = next((x for x in day_slots if x["from"] == data.get("slot_from")), None)
     if slot is None:
         return {"error": "slot_not_found", "status": 422}

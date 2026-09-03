@@ -158,6 +158,24 @@ class CalcMatchesBrowser(unittest.TestCase):
                   for d in ("2026-08-18", "2026-01-01", "2026-12-31")]
         self.compare(cases)
 
+    def test_slots_for_date_matches(self):
+        """ТЗ 4.4/2.9: праздничный день закрыт целиком в обеих реализациях."""
+        def opts(ymd, holidays):
+            return dict(ymd=ymd, work_from=9, work_to=21, cutoff_h=2,
+                        capacity=2, booked={"2026-08-20|9": 1}, holidays=holidays)
+
+        def js_opts(ymd, holidays):
+            return {"ymd": ymd, "now": NOW_ARG, "workFrom": 9, "workTo": 21,
+                    "cutoffH": 2, "capacity": 2, "booked": {"2026-08-20|9": 1},
+                    "holidays": holidays}
+
+        cases = []
+        for ymd, holidays in (("2026-08-20", ["2026-08-20"]), ("2026-08-20", []),
+                              ("2026-08-19", ["2026-08-20"])):
+            cases.append(("slotsForDate", [js_opts(ymd, holidays)],
+                          C.slots_for_date(now=NOW, **opts(ymd, holidays))))
+        self.compare(cases)
+
     # -- поиск и статусы ----------------------------------------------------
     def test_search_helpers_match(self):
         words = ["Яблоко", "ЯБЛОКО", "  яблоко  ", "ёлка", "елка", "Grenny Smith"]

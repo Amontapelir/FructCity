@@ -33,7 +33,18 @@ process.stdin.on('end', () => {
   // Явная пометка, а не угадывание по виду строки: аргументом бывает и
   // дата-строка «2026-08-18», которая обязана остаться строкой —
   // `dateExpired` сравнивает её как текст.
-  const revive = (v) => (v && typeof v === 'object' && v.__date ? new Date(v.__date) : v);
+  //
+  // Рекурсивно: часть функций (slotsForDate) принимает один
+  // options-объект, а не набор позиционных аргументов, и `now` в нём —
+  // вложенное поле, а не сам верхнеуровневый элемент args.
+  const revive = (v) => {
+    if (!v || typeof v !== 'object') return v;
+    if (v.__date) return new Date(v.__date);
+    if (Array.isArray(v)) return v.map(revive);
+    const out = {};
+    for (const k of Object.keys(v)) out[k] = revive(v[k]);
+    return out;
+  };
 
   const out = cases.map((c) => {
     try {

@@ -171,6 +171,7 @@ def slots_view(state: Mapping[str, Any], method: str, now: datetime | None = Non
                 work_from=int(C.num(s.get("work_from"))),
                 work_to=int(C.num(s.get("work_to"))),
                 cutoff_h=s.get("cutoff_h"), capacity=capacity, booked=booked,
+                holidays=s.get("holidays") or [],
             ),
         })
     first_free = next((d["ymd"] for d in days if any(x["ok"] for x in d["slots"])), None)

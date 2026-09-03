@@ -441,6 +441,7 @@ def slots_for_date(
     cutoff_h: Any = 0,
     capacity: Any = 0,
     booked: Mapping[str, Any] | None = None,
+    holidays: Iterable[str] = (),
 ) -> list[dict[str, Any]]:
     """Слоты на дату — вместе с причиной недоступности.
 
@@ -451,6 +452,7 @@ def slots_for_date(
     now_min = now_p.hour * 60 + now_p.minute
     booked = booked or {}
     capacity_n = num(capacity)
+    is_holiday = ymd in holidays
     out: list[dict[str, Any]] = []
 
     h = work_from
@@ -460,6 +462,10 @@ def slots_for_date(
         reason: str | None = None
         if ymd < now_p.ymd:
             ok, reason = False, "прошло"
+        elif is_holiday:
+            # Праздник/выходной — весь день, независимо от времени
+            # (ТЗ 4.4): в отличие от «занято», час здесь ни при чём.
+            ok, reason = False, "выходной"
         elif ymd == now_p.ymd and (h * 60 - now_min) < num(cutoff_h) * 60:
             ok, reason = False, "поздно"
         if ok and capacity_n > 0 and used >= capacity_n:
