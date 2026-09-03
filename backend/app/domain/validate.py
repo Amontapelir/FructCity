@@ -539,6 +539,9 @@ SCHEMAS: dict[str, dict[str, Callable]] = {
         "meat_limit_kg": T.num(min=0, max=100000),
         "meat_cutoff_days": T.int_(min=0, max=14),
         "requisites": T.str_(min=0, max=300),
+        # Даты-исключения слотов доставки/самовывоза (ТЗ 4.4) — список
+        # растёт руками из админки, сотней с запасом хватит на годы вперёд.
+        "holidays": T.array_of(T.ymd(), max=100),
     },
 
     # ---- админ: предзаказы (ТЗ 10.4) ----

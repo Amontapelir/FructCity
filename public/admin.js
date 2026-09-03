@@ -1267,6 +1267,17 @@ async function pageDelivery() {
       <div class="hint">Интервал слота фиксирован в ТЗ 4.4 — 2 часа. Часовой пояс Europe/Moscow.</div>
     </div>
 
+    <div class="panel"><h3>Праздники и выходные</h3>
+      <div class="hint">Даты из списка закрыты для доставки и самовывоза целиком —
+        слот недоступен независимо от часа (ТЗ 4.4).</div>
+      <div id="holidaysList"></div>
+      <div class="frow">
+        <div><label class="f" for="s_holiday_new">Добавить дату</label>
+          <input class="t" id="s_holiday_new" type="date"></div>
+        <div style="align-self:flex-end"><button class="btn gh sm" id="addHoliday">Добавить</button></div>
+      </div>
+    </div>
+
     <div class="panel"><h3>Предзаказ мяса</h3>
       <label class="f">Дни поставки</label>
       <div style="display:flex;gap:6px;flex-wrap:wrap">${['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'].map(d =>
@@ -1294,6 +1305,30 @@ async function pageDelivery() {
       <div class="mfoot"><button class="btn" id="saveSettings">Сохранить настройки</button></div>
     </div>`;
 
+  // Список дат-исключений редактируется локально и уходит на сервер
+  // вместе с остальными настройками по кнопке «Сохранить настройки» —
+  // как и meat_days рядом, а не отдельным маршрутом.
+  let holidays = [...(st.holidays || [])].sort();
+  function renderHolidays() {
+    $('#holidaysList').innerHTML = holidays.length
+      ? holidays.map(d => h`<div class="chiprow">
+          <span>${d}</span>
+          <button class="iconbtn" data-holiday-del="${d}" title="Убрать дату">✕</button>
+        </div>`)
+      : h`<div class="muted">Список пуст</div>`;
+    $$('[data-holiday-del]').forEach(b => b.onclick = () => {
+      holidays = holidays.filter(d => d !== b.dataset.holidayDel);
+      renderHolidays();
+    });
+  }
+  renderHolidays();
+  $('#addHoliday').onclick = () => {
+    const v = $('#s_holiday_new').value;
+    if (!v) return;
+    if (!holidays.includes(v)) { holidays.push(v); holidays.sort(); renderHolidays(); }
+    $('#s_holiday_new').value = '';
+  };
+
   $$('[data-zone]').forEach(b => b.onclick = async () => {
     const id = b.dataset.zone;
     try {
@@ -1315,7 +1350,7 @@ async function pageDelivery() {
       email: $('#s_email').value.trim(),
       meat_days: $$('[data-meatday]').filter(c => c.checked).map(c => c.dataset.meatday),
       meat_limit_kg: Number($('#s_kg').value), meat_cutoff_days: Number($('#s_cd').value),
-      requisites: $('#s_req').value.trim()
+      requisites: $('#s_req').value.trim(), holidays
     };
     try { await api('/api/admin/settings', { method: 'PUT', body }); toast('Настройки сохранены'); }
     catch (e) { toast(errText(e), true); }
