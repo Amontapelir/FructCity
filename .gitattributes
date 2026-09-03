@@ -1,0 +1,20 @@
+# Концы строк. Правило нужно из-за одного конкретного отказа: если
+# `start.sh` попадёт в рабочую копию с CRLF, Linux и macOS откажутся его
+# запускать — `bad interpreter: /usr/bin/env bash^M`. Ошибка выглядит
+# как «сломанный скрипт», хотя сломаны только невидимые символы.
+#
+# Обратное тоже верно: `.cmd` обязан быть с CRLF, иначе cmd.exe читает
+# файл неправильно.
+
+* text=auto
+
+*.sh    text eol=lf
+*.cmd   text eol=crlf
+*.bat   text eol=crlf
+
+# Двоичные — не трогать вовсе.
+*.png   binary
+*.jpg   binary
+*.webp  binary
+*.ico   binary
+*.woff2 binary

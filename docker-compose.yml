@@ -1,0 +1,46 @@
+# Локальное/боевое развёртывание: приложение + PostgreSQL.
+#
+# Переменные читаются из .env (скопируйте .env.example) — тем же файлом
+# пользуется и сам compose для подстановки ниже, и контейнер app через
+# env_file. FC_WRITE_ENABLED в .env.example выключен по умолчанию —
+# включите его явно, иначе магазин поднимется в режиме «только чтение»
+# (см. .env.example и config.py).
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      # Административная запись PostgreSQL — та же, которой provision()
+      # (backend/app/db/models.py) заводит роль и базу приложения при
+      # первом старте контейнера app. FC_DB_ADMIN_DB по умолчанию
+      # "postgres" — служебная база, к которой обязательно подключаться
+      # для CREATE DATABASE (см. docstring provision()).
+      POSTGRES_USER: ${FC_DB_ADMIN_USER:-postgres}
+      POSTGRES_PASSWORD: ${FC_DB_ADMIN_PASSWORD:?задайте FC_DB_ADMIN_PASSWORD в .env}
+      POSTGRES_DB: ${FC_DB_ADMIN_DB:-postgres}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${FC_DB_ADMIN_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Внутри сети compose база видна по имени сервиса, а не по
+      # 127.0.0.1 из .env.example (тот рассчитан на запуск без Docker).
+      FC_DB_HOST: db
+      FC_DB_PORT: "5432"
+    ports:
+      - "${PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
