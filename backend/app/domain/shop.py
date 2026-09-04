@@ -26,7 +26,7 @@ from .catalog import (active_products, booking_map, public_product, slot_key,
 
 __all__ = [
     "cart_view", "add_to_cart", "update_cart", "apply_promo",
-    "place_order", "cancel_order", "create_preorder",
+    "place_order", "cancel_order", "quote_delivery_cost", "create_preorder",
     "order_view", "recalc_order", "line_total_of", "billable_weight",
     "count_promo_usage",
 ]
@@ -272,8 +272,10 @@ def place_order(state: dict[str, Any], *, next_id: Callable[[str], int],
             return {"error": "zone_required", "status": 422}
         if not data.get("address") or len(str(data["address"])) < 5:
             return {"error": "address_required", "status": 422}
-        if zone.get("cost") is None:
-            return {"error": "zone_manual_quote", "status": 409}   # ТЗ 5.2
+        # Зона без тарифа (ТЗ 5.2) больше не отклоняет заказ (ROADMAP
+        # 2.12) — calc_order сам отдаст needs_quote=True и delivery=0,
+        # ниже это превращается в статус awaiting_delivery_quote вместо
+        # обычного new/awaiting_payment.
 
     # --- 3. Слот (ТЗ 4.4) ---
     s = state.get("settings", {})
@@ -349,8 +351,13 @@ def place_order(state: dict[str, Any], *, next_id: Callable[[str], int],
         "comment": data.get("comment") or "",
         "payment_method": payment,
         "payment_status": "pending",              # ТЗ 13 — независимая ось
-        # Предоплаченные способы ждут подтверждения платежа
-        "status": "awaiting_payment" if C.is_prepaid(payment) else "new",
+        # Зона без тарифа (ТЗ 5.2) — заказ ждёт согласования доставки
+        # персоналом (quote_delivery_cost) раньше, чем что-либо ещё:
+        # без известной суммы предоплату не запросить, а с оплатой при
+        # получении сборка началась бы по неполной цене.
+        # Иначе — предоплаченные способы ждут подтверждения платежа.
+        "status": ("awaiting_delivery_quote" if calc.needs_quote
+                  else "awaiting_payment" if C.is_prepaid(payment) else "new"),
         "promocode_id": promo.get("id") if promo else None,
         "promocode": promo.get("code") if promo else None,
         "discount_amount": calc.discount,
@@ -496,6 +503,49 @@ def cancel_order(state: dict[str, Any], *, next_id: Callable[[str], int],
         "id": next_id("order_status_history"),
         "order_id": order.get("id"), "status": "cancelled",
         "actor": actor, "comment": reason or None, "at": now_iso(),
+    })
+    return {"ok": True, "order": order}
+
+
+# ---------------------------------------------------------------------------
+# Зона без тарифа (ТЗ 5.2, ROADMAP 2.12)
+# ---------------------------------------------------------------------------
+def quote_delivery_cost(state: dict[str, Any], *, next_id: Callable[[str], int],
+                        now_iso: Callable[[], str], order: dict[str, Any],
+                        cost: float, actor: str) -> dict[str, Any]:
+    """Персонал называет стоимость доставки для зоны без тарифа.
+
+    Раньше такой заказ вообще не создавался — `create_order` отказывал
+    кодом `zone_manual_quote`. Теперь он создаётся сразу со статусом
+    `awaiting_delivery_quote` (`calc.needs_quote`, delivery=0), а эта
+    функция — единственный выход из него: тариф зоны (`delivery_zones
+    .cost`) остаётся пустым и после согласования — сумма привязана к
+    ЭТОМУ заказу, не к зоне в целом, следующий заказ туда же снова
+    попросит расчёта. Дальше заказ идёт в тот же статус, что получил бы
+    при оформлении, знай `calc_order` стоимость заранее.
+    """
+    if order.get("status") != "awaiting_delivery_quote":
+        return {"error": "quote_not_expected", "status": 409}
+    if cost < 0:
+        return {"error": "bad_cost", "status": 422}
+
+    cost = C.js_number(cost)
+    order["delivery_cost"] = cost
+    # agreed_delivery_cost — тот же потолок, что recalc_order применяет
+    # к обычным заказам (инвариант 8: сумма меняется только вниз); здесь
+    # он же не даёт будущему пересчёту откатить согласованную сумму к
+    # нулю зоны (см. комментарий в recalc_order).
+    order["agreed_delivery_cost"] = cost
+    order["total"] = max(0, int(C.num(order.get("items_total")))
+                         - int(C.num(order.get("discount_amount"))) + int(cost))
+    order["planned_total"] = order["total"]
+    order["status"] = "awaiting_payment" if C.is_prepaid(order.get("payment_method")) else "new"
+    order["updated_at"] = now_iso()
+
+    state.setdefault("order_status_history", []).append({
+        "id": next_id("order_status_history"),
+        "order_id": order.get("id"), "status": order["status"],
+        "actor": actor, "comment": f"доставка согласована: {cost} ₽", "at": now_iso(),
     })
     return {"ok": True, "order": order}
 
@@ -724,7 +774,14 @@ def recalc_order(state: dict[str, Any], order: dict[str, Any]) -> dict[str, Any]
     agreed = C.num(order.get("agreed_delivery_cost")
                    if order.get("agreed_delivery_cost") is not None
                    else order.get("delivery_cost"))
-    delivery = min(agreed, C.num(calc.delivery))
+    # Зона без тарифа (ТЗ 5.2): у неё calc.delivery ВСЕГДА 0 (zone.cost
+    # так и остаётся пустым — тариф согласован персоналом на этот
+    # заказ, а не на зону в целом). min(agreed, 0) обнулил бы уже
+    # согласованную стоимость при первом же пересчёте после сборки
+    # (снятие позиции, уточнение веса) — ровно то, что нельзя молча
+    # терять (инвариант 8: сумма меняется только вниз С СОГЛАСИЯ, а не
+    # произвольно).
+    delivery = agreed if calc.needs_quote else min(agreed, C.num(calc.delivery))
 
     if not any(not i.get("is_removed") for i in items):
         delivery = 0        # везти нечего — доставка не платится

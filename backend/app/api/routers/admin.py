@@ -436,6 +436,30 @@ async def order_status(order_id: str, request: Request,
         return {"order": S.order_view(st, o, True)}
 
 
+@router.post("/orders/{order_id}/delivery-quote")
+async def order_delivery_quote(order_id: str, request: Request,
+                               ctx: Ctx = Depends(get_ctx)) -> dict[str, Any]:
+    """Персонал называет стоимость доставки для зоны без тарифа (ТЗ 5.2).
+
+    Единственный выход из `awaiting_delivery_quote` — обычная кнопка
+    смены статуса (`/orders/{id}/status`) его не знает, как и `cancelled`
+    выше: `S.quote_delivery_cost` сама решает, куда заказ идёт дальше.
+    """
+    ctx.require_staff("orders")
+    data = validate(SCHEMAS["deliveryQuote"], await _body(request))
+
+    with ctx.tx() as unit:
+        st = unit.state
+        o = next((x for x in st.get("orders") or [] if str(x.get("id")) == order_id), None)
+        if o is None:
+            raise Fail(404, "order_not_found")
+        result = S.quote_delivery_cost(st, next_id=unit.next_id, now_iso=A.iso_now, order=o,
+                                       cost=data["cost"], actor=ctx.user["login"])
+        if result.get("error"):
+            raise Fail(result.get("status", 409), result["error"])
+        return {"order": S.order_view(st, o, True)}
+
+
 # Смена статуса оплаты — отдельное право: ТЗ 10.8 отводит менеджеру заказы,
 # но не деньги. Раньше маршрут довольствовался правом `orders`, и менеджер
 # мог пометить любой заказ оплаченным или возвращённым.

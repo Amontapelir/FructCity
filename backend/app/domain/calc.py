@@ -597,6 +597,11 @@ STATUS_LABEL = {
     "new": "Новый", "awaiting_payment": "Ожидает оплаты", "assembling": "Сборка",
     "partially_assembled": "Частично собран", "ready": "Готов",
     "in_delivery": "В доставке", "delivered": "Доставлен", "cancelled": "Отменён",
+    # Зона без тарифа (ТЗ 5.2, ROADMAP 2.12) — вне STATUS_FLOW, как и
+    # cancelled: заказ сюда попадает при оформлении вместо отказа
+    # (create_order), а выводит его только quote_delivery_cost — не
+    # обычная кнопка «дальше по статусам».
+    "awaiting_delivery_quote": "Ждёт расчёта доставки",
 }
 PAYMENT_LABEL = {"pending": "Ожидает оплаты", "paid": "Оплачен", "refunded": "Возвращён"}
 
@@ -654,6 +659,8 @@ def allowed_transitions(order: Mapping[str, Any] | None) -> dict[str, Any]:
         return {"allowed": [], "blockedReason": "order_cancelled"}
     if order.get("status") == "delivered":
         return {"allowed": [], "blockedReason": "order_delivered"}
+    if order.get("status") == "awaiting_delivery_quote":
+        return {"allowed": [], "blockedReason": "awaiting_delivery_quote"}
 
     prepaid = is_prepaid(order.get("payment_method"))
     paid = order.get("payment_status") == "paid"
@@ -691,5 +698,10 @@ def can_change_payment(order: Mapping[str, Any] | None, to: str) -> bool:
 
 
 def customer_can_cancel(status: Any) -> bool:
-    """Клиент отменяет сам только до сборки (ТЗ 4.6)."""
-    return status in ("new", "awaiting_payment")
+    """Клиент отменяет сам только до сборки (ТЗ 4.6).
+
+    ``awaiting_delivery_quote`` — раньше самое начало жизни заказа
+    (до ROADMAP 2.12 такой заказ вообще не создавался), поэтому
+    отменить его можно на тех же основаниях, что и совсем новый.
+    """
+    return status in ("new", "awaiting_payment", "awaiting_delivery_quote")

@@ -525,6 +525,11 @@ SCHEMAS: dict[str, dict[str, Callable]] = {
         "payment_status": T.enum_(["pending", "paid", "refunded"]),
     },
 
+    # ---- админ: заказ в зоне без тарифа (ТЗ 5.2, ROADMAP 2.12) ----
+    "deliveryQuote": {
+        "cost": T.num(min=0, max=1000000),
+    },
+
     # ---- админ: доставка (ТЗ 10.6) ----
     "deliveryZone": {
         "id": T.int_(min=1),
