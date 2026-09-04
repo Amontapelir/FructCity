@@ -24,6 +24,25 @@ from .photos import photo_url
 from .security import escape_html
 
 
+def _breadcrumb_list(items: list[tuple[str, str]]) -> dict[str, Any]:
+    """Schema.org BreadcrumbList (ROADMAP: расширенная микроразметка).
+
+    `items` — путь от корня, `(название, url)`. Отдельный JSON-LD блок
+    от основного (`Product`/`ItemList`), а не один документ с обоими:
+    так `product_meta`/`catalog_meta` не переписывают уже сверенный
+    порядок ключей своего узла (`test_pages_meta.py`,
+    `test_product_meta_json_ld_key_order`) — `with_meta` просто
+    добавляет второй `<script>`, когда он есть.
+    """
+    return {
+        "@context": "https://schema.org", "@type": "BreadcrumbList",
+        "itemListElement": [
+            {"@type": "ListItem", "position": i + 1, "name": name, "item": url}
+            for i, (name, url) in enumerate(items)
+        ],
+    }
+
+
 def _uri(s: Any) -> str:
     """`encodeURIComponent` из JS: `quote()` по умолчанию экранирует
     больше символов (`!*'()` не входят в его "always safe"), а часть
@@ -71,6 +90,8 @@ def with_meta(shell_html: str, meta: Mapping[str, Any]) -> str:
         '<meta name="robots" content="noindex, nofollow">' if meta.get("noindex") else "",
         (f'<script type="application/ld+json">{json_ld_safe(meta["json_ld"])}</script>'
          if meta.get("json_ld") else ""),
+        (f'<script type="application/ld+json">{json_ld_safe(meta["breadcrumbs"])}</script>'
+         if meta.get("breadcrumbs") else ""),
         (f'<script type="application/json" id="preload">{json_ld_safe(meta["preload"])}</script>'
          if meta.get("preload") else ""),
     ]
@@ -207,10 +228,16 @@ def product_meta(state: Mapping[str, Any], base: str, shop_name: str, slug: str,
     description = (p.get("description")
                    or f"{p.get('name')} с доставкой по Южному Бутово и Коммунарке за 2 часа.")
 
+    breadcrumbs = [("Главная", f"{base}/"), ("Каталог", f"{base}/catalog")]
+    if cat:
+        breadcrumbs.append((cat.get("name"), f"{base}/catalog/{_uri(cat.get('id'))}"))
+    breadcrumbs.append((p.get("name"), canonical))
+
     return {
         "title": f"{p.get('name')} — купить за {C.js_number(price)} ₽/{unit} · {shop_name}",
         "description": description[:300],
         "canonical": canonical, "og_type": "product", "image": img, "json_ld": json_ld,
+        "breadcrumbs": _breadcrumb_list(breadcrumbs),
         "preload": {"route": "product", "slug": p.get("slug")},
         "noscript": noscript,
     }
@@ -248,6 +275,10 @@ def catalog_meta(state: Mapping[str, Any], base: str, shop_name: str,
                          for p in items[:100])
                + "</ul>")
 
+    breadcrumbs = [("Главная", f"{base}/"), ("Каталог", f"{base}/catalog")]
+    if cat:
+        breadcrumbs.append((cat.get("name"), f"{base}/catalog/{_uri(cat.get('id'))}"))
+
     return {
         "title": f"{cat['name']} — {shop_name}" if cat else f"Каталог продуктов — {shop_name}",
         "description": (f"{cat['name']}: {len(items)} товаров с доставкой за 2 часа "
@@ -256,6 +287,7 @@ def catalog_meta(state: Mapping[str, Any], base: str, shop_name: str,
                         "Доставка за 2 часа."),
         "canonical": (f"{base}/catalog/{_uri(cat['id'])}" if cat
                      else f"{base}/catalog"),
+        "breadcrumbs": _breadcrumb_list(breadcrumbs),
         "preload": {"route": "catalog", "category": cat["id"] if cat else "all"},
         "json_ld": {
             "@context": "https://schema.org", "@type": "ItemList",
