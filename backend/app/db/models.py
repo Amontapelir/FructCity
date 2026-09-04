@@ -112,6 +112,26 @@ class Product(Base):
     updated_at: Mapped[str | None] = mapped_column(String(40), default=None)
 
 
+class ProductImage(Base):
+    """Дополнительные фотографии товара (ТЗ 2.2.4, 13; ROADMAP 2.11).
+
+    Первая (обложка) остаётся в `products.image_key`, как и раньше — эта
+    таблица только про ОСТАЛЬНЫЕ, показанные на карточке товара галереей.
+    Ссылка на файл — тот же справочник Wikimedia (`domain/photos.py`),
+    не приём произвольных файлов: своего хранилища и раздачи загрузок у
+    проекта нет, и заводить их ради этой задачи было бы отдельной, более
+    крупной работой.
+    """
+
+    __tablename__ = "product_images"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.id", ondelete="CASCADE"), index=True)
+    image_key: Mapped[str] = mapped_column(String(64))
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+
+
 class DeliveryZone(Base):
     __tablename__ = "delivery_zones"
 

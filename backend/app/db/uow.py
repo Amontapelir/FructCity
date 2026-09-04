@@ -45,6 +45,7 @@ COLLECTIONS: tuple[tuple[str, Any, tuple[str, ...]], ...] = (
     ("promocodes", M.Promocode.__table__, ("id",)),
     ("users", M.User.__table__, ("id",)),
     ("products", M.Product.__table__, ("id",)),
+    ("product_images", M.ProductImage.__table__, ("id",)),
     ("sessions", M.Session.__table__, ("id",)),
     ("otp", M.Otp.__table__, ("id",)),
     ("tg_links", M.TelegramLink.__table__, ("id",)),

@@ -35,6 +35,7 @@ __all__ = ["load_state", "DbState", "js_number"]
 PLAIN = (
     ("categories", M.Category),
     ("products", M.Product),
+    ("product_images", M.ProductImage),
     ("delivery_zones", M.DeliveryZone),
     ("promocodes", M.Promocode),
     ("users", M.User),
@@ -73,14 +74,32 @@ def load_state(engine: Engine) -> dict[str, Any]:
     # Поля, которых в базе нет, но которые ждёт доменный слой.
     state.setdefault("meta", {})
     state["seq"] = _seq(state)
+    _attach_extra_images(state)
     return state
+
+
+def _attach_extra_images(state: dict[str, Any]) -> None:
+    """Кладёт на каждый товар его дополнительные фото (ROADMAP 2.11).
+
+    `product_images` — отдельная плоская коллекция (как `order_items`):
+    так её пишет `db/uow.py` — сравнением снимков, без ручного кода
+    записи. Но `catalog.py::public_product`/`admin.py::admin_product`
+    принимают один товар, а не всё состояние, поэтому список нужно
+    заранее сгруппировать и положить на сам товар — иначе представлению
+    неоткуда его взять.
+    """
+    by_product: dict[Any, list[str]] = {}
+    for row in sorted(state.get("product_images") or [], key=lambda r: r.get("sort_order") or 0):
+        by_product.setdefault(row.get("product_id"), []).append(row.get("image_key"))
+    for p in state.get("products") or []:
+        p["extra_images"] = by_product.get(p.get("id"), [])
 
 
 # Коллекции с целочисленным `id`: для них восстанавливается счётчик
 # `seq[имя]` от максимального значения. У категорий ключ строковый
 # («fruit», «meat») — счётчика у них нет и не нужно.
 _SEQ_COLLECTIONS = (
-    "products", "delivery_zones", "promocodes", "users", "sessions",
+    "products", "product_images", "delivery_zones", "promocodes", "users", "sessions",
     "otp", "tg_links", "orders", "order_items", "order_status_history",
     "preorders", "promocode_usages", "consents", "audit",
 )

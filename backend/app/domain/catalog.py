@@ -21,10 +21,26 @@ from . import calc as C
 __all__ = [
     "public_product", "active_products", "list_products", "price_range",
     "find_product", "slot_key", "booking_map", "slots_view", "meat_dates_view",
+    "image_keys",
 ]
 
 SORT_ASC = "asc"
 SORT_DESC = "desc"
+
+
+def image_keys(p: Mapping[str, Any]) -> list[str]:
+    """Полная галерея товара: обложка первой, за ней — дополнительные
+    (ROADMAP 2.11). `image_key` — как и раньше, отдельное поле для
+    старого фронтенда (инвариант 19); это — его расширение, не замена.
+
+    `extra_images` кладёт `db/repository.py` при чтении из базы
+    (группировка отдельной таблицы `product_images` по товару) — здесь
+    P может не нести его вовсе (например, при прямом вызове в тестах),
+    тогда лишних фото просто нет.
+    """
+    cover = p.get("image_key")
+    extra = p.get("extra_images") or []
+    return ([cover] if cover else []) + list(extra)
 
 
 def public_product(p: Mapping[str, Any], now: datetime | None = None) -> dict[str, Any]:
@@ -52,6 +68,7 @@ def public_product(p: Mapping[str, Any], now: datetime | None = None) -> dict[st
         "in_stock": C.in_stock(p),
         "min_weight": p.get("min_weight"), "weight_step": p.get("weight_step"),
         "image_key": p.get("image_key"), "emoji": p.get("emoji"),
+        "image_keys": image_keys(p),
         "description": p.get("description"),
     }
 

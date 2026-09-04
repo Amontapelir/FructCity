@@ -171,9 +171,17 @@ async def products_create(request: Request, ctx: Ctx = Depends(get_ctx)) -> dict
             raise Fail(409, "slug_exists")
 
         now = A.iso_now()
+        extra_keys = data.pop("extra_image_keys", None) or []
         product = {**data, "id": unit.next_id("products"), "vat_rate": int(data["vat_rate"]),
                    "slug": slug, "created_at": now, "updated_at": now}
         st.setdefault("products", []).append(product)
+        st["product_images"] = AD.replace_product_images(
+            st.get("product_images") or [], product_id=product["id"],
+            keys=extra_keys, next_id=unit.next_id)
+        # Сразу на товар — ответ этого запроса не идёт через
+        # db/repository.py, которое обычно и кладёт extra_images
+        # (группировкой `product_images` при чтении из базы).
+        product["extra_images"] = extra_keys
         st.setdefault("audit", []).append({
             "id": unit.next_id("audit"), "actor": ctx.user["login"], "action": "product.create",
             "details": product["sku"], "at": now,
@@ -207,7 +215,12 @@ async def products_update(product_id: str, request: Request,
             raise Fail(409, "slug_exists")
 
         now = A.iso_now()
+        extra_keys = data.pop("extra_image_keys", None) or []
         p.update({**data, "vat_rate": int(data["vat_rate"]), "slug": slug, "updated_at": now})
+        st["product_images"] = AD.replace_product_images(
+            st.get("product_images") or [], product_id=p["id"],
+            keys=extra_keys, next_id=unit.next_id)
+        p["extra_images"] = extra_keys
         st.setdefault("audit", []).append({
             "id": unit.next_id("audit"), "actor": ctx.user["login"], "action": "product.update",
             "details": p["sku"], "at": now,
