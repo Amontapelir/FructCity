@@ -97,6 +97,11 @@ def robots_txt(base: str) -> str:
         "Disallow: /cart",
         "Disallow: /checkout",
         "Disallow: /profile",
+        # /login и /preorder тоже noindex (spa_meta) — тот же приём, что
+        # и у трёх маршрутов выше, для единообразия (issue #17: раньше
+        # были noindex только через мета-тег, без Disallow здесь).
+        "Disallow: /login",
+        "Disallow: /preorder",
         "",
         f"Sitemap: {base}/sitemap.xml",
     ])
