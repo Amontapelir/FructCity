@@ -150,11 +150,15 @@ function art(name, eager) {
 
 const PHOTO_BASE = 'https://commons.wikimedia.org/wiki/Special:FilePath/';
 let PHOTOS = {};
+function photoUrlByKey(key, width) {
+  const file = PHOTOS[key];
+  if (!file) return null;
+  return PHOTO_BASE + encodeURIComponent(file) + (width ? '?width=' + width : '');
+}
 function photo(p, width) {
-  const file = PHOTOS[p.image_key];
+  const url = photoUrlByKey(p.image_key, width);
   const emoji = p.emoji || '📦';
-  if (!file) return h`<span class="e" aria-hidden="true">${emoji}</span>`;
-  const url = PHOTO_BASE + encodeURIComponent(file) + (width ? '?width=' + width : '');
+  if (!url) return h`<span class="e" aria-hidden="true">${emoji}</span>`;
   return h`<img src="${url}" alt="${p.name}" loading="lazy" decoding="async" data-emoji="${emoji}">`;
 }
 
@@ -585,7 +589,19 @@ async function renderProduct(view, slug) {
     <p style="font-size:12.5px;color:var(--ink-3)"><a href="/catalog">Каталог</a> ›
       <a href="/catalog/${p.category_id}">${(S.boot.categories.find(c => c.id === p.category_id) || {}).name || ''}</a></p>
     <div class="big" style="margin:16px 0">
-      <span class="ph" style="width:180px;height:180px;font-size:64px">${photo(p, 400)}</span>
+      <div>
+        <span class="ph" id="prodPhoto" style="width:180px;height:180px;font-size:64px">${photo(p, 400)}</span>
+        ${p.image_keys && p.image_keys.length > 1 ? raw(h`<div id="prodGallery"
+          style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+          ${p.image_keys.map((k, i) => raw(h`<button type="button" class="ph gthumb"
+            data-gkey="${k}" data-gi="${i}"
+            style="width:44px;height:44px;font-size:22px;padding:0;border:2px solid ${i === 0 ? 'var(--accent, #2a7)' : 'transparent'}">
+            ${photoUrlByKey(k, 100)
+              ? h`<img src="${photoUrlByKey(k, 100)}" alt="" loading="lazy">`
+              : h`<span class="e" aria-hidden="true">${p.emoji || '📦'}</span>`}
+          </button>`))}
+        </div>`) : ''}
+      </div>
       <div style="flex:1">
         <h1 style="font-size:24px;margin:0 0 8px">${p.name}</h1>
         <p class="pr" style="margin:0 0 6px">${raw(price)}
@@ -602,6 +618,16 @@ async function renderProduct(view, slug) {
     ${!p.in_stock && p.type !== 'preorder' ? raw(h`<div class="note err">Товара сейчас нет.
       Карточка остаётся доступной, чтобы не терялась ссылка. Поступление ожидается в ближайшие дни.</div>`) : ''}
   </div>`;
+
+  $$('#prodGallery [data-gkey]').forEach(btn => btn.onclick = () => {
+    const url = photoUrlByKey(btn.dataset.gkey, 400);
+    const holder = $('#prodPhoto');
+    holder.innerHTML = url
+      ? h`<img src="${url}" alt="${p.name}" decoding="async">`
+      : h`<span class="e" aria-hidden="true">${p.emoji || '📦'}</span>`;
+    $$('#prodGallery .gthumb').forEach(b =>
+      b.style.borderColor = b === btn ? 'var(--accent, #2a7)' : 'transparent');
+  });
 
   const act = $('#prodAction');
   if (p.type === 'preorder') {

@@ -662,7 +662,7 @@ function toPayload(p, over = {}) {
     vat_rate: String(p.vat_rate), stock: p.stock,
     min_weight: p.min_weight, weight_step: p.weight_step,
     is_active: p.is_active, image_key: p.image_key || '', emoji: p.emoji || '',
-    description: p.description || ''
+    description: p.description || '', extra_image_keys: p.extra_images || []
   }, over);
 }
 
@@ -720,8 +720,17 @@ function productModal(id) {
       <div class="frow">
         <div><label class="f" for="f_stock">Остаток <span class="req">*</span></label>
           <input class="t" id="f_stock" type="number" min="0" step="0.01" value="${p.stock}"></div>
-        <div><label class="f" for="f_img">Ключ фото</label>
+        <div><label class="f" for="f_img">Ключ фото (обложка)</label>
           <input class="t" id="f_img" value="${p.image_key || ''}" maxlength="40" placeholder="avocado"></div>
+      </div>
+      <label class="f">Дополнительные фото (ROADMAP 2.11)</label>
+      <div class="hint">Та же галерея Wikimedia, что и обложка выше — до 8 штук,
+        показываются на карточке товара по порядку добавления.</div>
+      <div id="extraImagesList"></div>
+      <div class="frow">
+        <div><label class="f" for="f_img_new">Ключ фото</label>
+          <input class="t" id="f_img_new" maxlength="40" placeholder="mango"></div>
+        <div style="align-self:flex-end"><button class="btn gh sm" id="addExtraImage" type="button">Добавить</button></div>
       </div>
       <div class="frow">
         <div><label class="f" for="f_emoji">Эмодзи-заглушка</label>
@@ -743,6 +752,32 @@ function productModal(id) {
   };
   $('#f_type').onchange = hint; hint();
 
+  // Порядок — это порядок показа в галерее на карточке товара, поэтому
+  // только добавление в конец и удаление, без сортировки (в отличие от
+  // holidays рядом, где порядок дат не имеет значения).
+  let extraImages = [...(p.extra_images || [])];
+  function renderExtraImages() {
+    $('#extraImagesList').innerHTML = extraImages.length
+      ? extraImages.map((k, i) => h`<div class="chiprow">
+          <span>${k}</span>
+          <button class="iconbtn" data-eimg-del="${i}" title="Убрать фото">✕</button>
+        </div>`)
+      : h`<div class="muted">Дополнительных фото нет</div>`;
+    $$('[data-eimg-del]').forEach(b => b.onclick = () => {
+      extraImages.splice(Number(b.dataset.eimgDel), 1);
+      renderExtraImages();
+    });
+  }
+  renderExtraImages();
+  $('#addExtraImage').onclick = () => {
+    const v = $('#f_img_new').value.trim();
+    if (!v) return;
+    if (extraImages.length >= 8) return toast('Не больше 8 дополнительных фото', true);
+    extraImages.push(v);
+    $('#f_img_new').value = '';
+    renderExtraImages();
+  };
+
   $('#saveProd').onclick = async () => {
     const type = $('#f_type').value;
     const price = Number($('#f_price').value);
@@ -756,7 +791,7 @@ function productModal(id) {
       min_weight: p.min_weight || 0.5, weight_step: p.weight_step || 0.5,
       is_active: $('#f_active').checked,
       image_key: $('#f_img').value.trim(), emoji: $('#f_emoji').value.trim(),
-      description: $('#f_desc').value
+      description: $('#f_desc').value, extra_image_keys: extraImages
     };
     try {
       await api(id ? '/api/admin/products/' + id : '/api/admin/products',

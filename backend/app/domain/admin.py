@@ -22,6 +22,7 @@ from .validate import validate as validate_schema
 
 __all__ = [
     "admin_product", "category_out", "zone_out", "product_sanity", "promo_sanity",
+    "replace_product_images",
     "order_closed_for_edits", "packing_list_html",
     "revenue_by_period", "daily_revenue", "orders_by_status", "orders_by_slot",
     "CSV_COLUMNS", "csv_cell", "parse_csv", "import_products", "IMPORT_MODES",
@@ -43,6 +44,10 @@ def admin_product(p: Mapping[str, Any], now: datetime | None = None) -> dict[str
         "is_active": p.get("is_active"),
         "sale_price": p.get("sale_price") or None,
         "sale_until": p.get("sale_until") or None,
+        # Отдельно от объединённой витринной `image_keys` (обложка +
+        # доп. фото) — форме редактирования нужен именно список ДОП.
+        # фото, без обложки, чтобы не путать его с полем `image_key`.
+        "extra_images": list(p.get("extra_images") or []),
         "sale_expired": bool(p.get("sale_price") and p.get("sale_until")
                              and not C.is_sale(p, now)),
     })
@@ -107,6 +112,25 @@ def product_sanity(input: Mapping[str, Any]) -> dict[str, str] | None:
     if sale is not None and C.num(sale) > 0 and price_n > 0 and C.num(sale) >= price_n:
         errs["sale_price"] = "акционная цена должна быть ниже базовой"
     return errs or None
+
+
+def replace_product_images(images: Sequence[Mapping[str, Any]], *, product_id: int,
+                           keys: Sequence[str],
+                           next_id: Callable[[str], int]) -> list[dict[str, Any]]:
+    """Полная замена дополнительных фото товара (ROADMAP 2.11).
+
+    Обложка остаётся в `products.image_key` — эта функция про ОСТАЛЬНЫЕ,
+    из отдельной таблицы `product_images`. Список заменяется целиком, как
+    и `settings.holidays`: администратор видит порядок и правит его весь
+    сразу, а не по одной строке. `db/uow.py` пишет разницу снимков сам —
+    здесь только пересобрать плоский список: строки этого товара долой,
+    новые — по порядку `keys`.
+    """
+    kept = [row for row in images if row.get("product_id") != product_id]
+    added = [{"id": next_id("product_images"), "product_id": product_id,
+             "image_key": key, "sort_order": i}
+            for i, key in enumerate(keys)]
+    return kept + added
 
 
 # ---------------------------------------------------------------------------

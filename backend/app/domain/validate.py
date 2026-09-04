@@ -461,6 +461,13 @@ SCHEMAS: dict[str, dict[str, Callable]] = {
         "is_active": T.bool_(default=True),
         "image_key": T.str_(min=0, max=40, pattern=_IMAGE_KEY_RE,
                             pattern_msg="ключ фото: латиница и подчёркивание"),
+        # Дополнительные фото — та же галерея, но за обложкой (ROADMAP
+        # 2.11). Восемь достаточно для карточки продукта в маленьком
+        # магазине; required=False — старые вызовы (например, тесты
+        # прежних сессий) без этого поля не ломаются.
+        "extra_image_keys": T.optional(T.array_of(
+            T.str_(min=0, max=40, pattern=_IMAGE_KEY_RE,
+                  pattern_msg="ключ фото: латиница и подчёркивание"), max=8), []),
         "emoji": T.str_(min=0, max=8),
         "description": T.str_(min=0, max=2000),
     },
