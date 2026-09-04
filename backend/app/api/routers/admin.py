@@ -885,7 +885,7 @@ async def products_import(request: Request, ctx: Ctx = Depends(get_ctx)) -> dict
 
     with ctx.tx() as unit:
         result = AD.import_products(unit.state, next_id=unit.next_id, now_iso=A.iso_now,
-                                    rows=parsed["rows"])
+                                    rows=parsed["rows"], mode=data["mode"])
         unit.state.setdefault("audit", []).append({
             "id": unit.next_id("audit"), "actor": ctx.user["login"], "action": "products.import",
             "details": f"+{result['created']} ~{result['updated']} !{len(result['skipped'])}",
