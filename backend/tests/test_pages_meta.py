@@ -93,6 +93,36 @@ class PagesMetaAssertions(unittest.TestCase):
         self.assertEqual(meta["json_ld"]["offers"]["availability"], "https://schema.org/OutOfStock")
         self.assertIn("eligibleQuantity", meta["json_ld"]["offers"])
 
+    def test_product_meta_breadcrumbs_include_category_and_product(self):
+        """Расширенная микроразметка (ROADMAP): Главная › Каталог ›
+        Категория › Товар — четыре уровня, а не два."""
+        meta = P.product_meta(self.STATE, "https://x", "S", "apple")
+        crumbs = meta["breadcrumbs"]["itemListElement"]
+        self.assertEqual([c["name"] for c in crumbs],
+                         ["Главная", "Каталог", "Фрукты", "Яблоко"])
+        self.assertEqual([c["position"] for c in crumbs], [1, 2, 3, 4])
+        self.assertEqual(crumbs[-1]["item"], meta["canonical"],
+                         "последняя крошка должна вести на саму карточку")
+
+    def test_catalog_meta_root_breadcrumbs_have_two_levels(self):
+        meta = P.catalog_meta(self.STATE, "https://x", "S", None)
+        self.assertEqual([c["name"] for c in meta["breadcrumbs"]["itemListElement"]],
+                         ["Главная", "Каталог"])
+
+    def test_catalog_meta_category_breadcrumbs_have_three_levels(self):
+        meta = P.catalog_meta(self.STATE, "https://x", "S", "fruit")
+        self.assertEqual([c["name"] for c in meta["breadcrumbs"]["itemListElement"]],
+                         ["Главная", "Каталог", "Фрукты"])
+
+    def test_with_meta_renders_product_json_ld_and_breadcrumbs_separately(self):
+        """Подмена сути: без второго script-блока хлебные крошки не
+        попадут на страницу вовсе, хотя meta их несёт."""
+        meta = P.product_meta(self.STATE, "https://x", "S", "apple")
+        html = P.with_meta('<html><!--SEO--><!--NOSCRIPT--></html>', meta)
+        self.assertEqual(html.count('<script type="application/ld+json">'), 2)
+        self.assertIn('"@type":"Product"', html)
+        self.assertIn('"@type":"BreadcrumbList"', html)
+
     def test_catalog_meta_unknown_category_is_404(self):
         self.assertIsNone(P.catalog_meta(self.STATE, "https://x", "S", "нет-такой"))
 
