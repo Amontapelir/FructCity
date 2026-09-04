@@ -222,6 +222,21 @@ class StaticOverHttp(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(home.status_code, 200)
         self.assertTrue(home.headers["content-type"].startswith("text/html"))
 
+    async def test_ssr_pages_all_carry_explicit_cache_control(self):
+        """Issue #16 — карточка товара и каталог отдавались вовсе без
+        Cache-Control (проверено вживую curl'ом), в отличие от главной.
+        Цена и остаток на этих страницах меняются — без явного правила
+        их рискует закэшировать прокси/CDN перед приложением."""
+        api = await self.client.get("/api/products")
+        slug = api.json()["items"][0]["slug"]
+
+        for path in ("/", "/catalog", f"/product/{slug}", "/policy", "/offer"):
+            with self.subTest(path=path):
+                r = await self.client.get(path)
+                self.assertEqual(r.status_code, 200)
+                self.assertEqual(r.headers.get("cache-control"), "no-cache",
+                                 f"{path}: нет (или не тот) Cache-Control")
+
 
 if __name__ == "__main__":
     unittest.main()

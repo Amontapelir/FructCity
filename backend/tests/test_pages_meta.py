@@ -133,6 +133,17 @@ class PagesMetaAssertions(unittest.TestCase):
     def test_robots_txt_points_at_sitemap(self):
         self.assertIn("Sitemap: https://x/sitemap.xml", P.robots_txt("https://x"))
 
+    def test_robots_txt_disallows_every_noindex_spa_route(self):
+        """Issue #17 — /login и /preorder получают noindex через
+        spa_meta, но раньше не попадали в Disallow, в отличие от
+        /cart, /checkout, /profile. Проверяем весь SPA_ROUTES разом,
+        чтобы новый noindex-маршрут не забылся тем же образом снова."""
+        text = P.robots_txt("https://x")
+        for route in P.SPA_ROUTES:
+            if route == "/":
+                continue
+            self.assertIn(f"Disallow: {route}", text, f"{route} не запрещён для краулера")
+
 
 if __name__ == "__main__":
     unittest.main()

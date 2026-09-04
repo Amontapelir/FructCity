@@ -94,8 +94,9 @@ def product_page(slug: str, request: Request, state: dict = Depends(get_state)) 
     meta = P.product_meta(state, base, shop_name, unquote(slug))
     if meta is None:
         # ТЗ 15.3 — 404 отдаём именно для несуществующих, а не для «нет в наличии»
-        return _html(P.with_meta(_shell(), P.not_found_meta(base, shop_name, "product")), 404)
-    return _html(P.with_meta(_shell(), meta))
+        return _html(P.with_meta(_shell(), P.not_found_meta(base, shop_name, "product")), 404,
+                    cache="no-cache")
+    return _html(P.with_meta(_shell(), meta), cache="no-cache")
 
 
 # ---------------------------------------------------------------------------
@@ -118,8 +119,9 @@ def _catalog(request: Request, state: dict[str, Any], cat_id: str | None) -> Res
 
     meta = P.catalog_meta(state, base, shop_name, cat_id)
     if meta is None:
-        return _html(P.with_meta(_shell(), P.not_found_meta(base, shop_name, "category")), 404)
-    return _html(P.with_meta(_shell(), meta))
+        return _html(P.with_meta(_shell(), P.not_found_meta(base, shop_name, "category")), 404,
+                    cache="no-cache")
+    return _html(P.with_meta(_shell(), meta), cache="no-cache")
 
 
 # ---------------------------------------------------------------------------
@@ -139,7 +141,7 @@ def _legal(request: Request, state: dict[str, Any], pathname: str) -> Response:
     settings = state.get("settings") or {}
     shop_name = settings.get("shop_name") or "FructCity"
     meta = P.legal_meta(_base_url(request), shop_name, pathname, settings)
-    return _html(P.with_meta(_shell(), meta))
+    return _html(P.with_meta(_shell(), meta), cache="no-cache")
 
 
 # ---------------------------------------------------------------------------
