@@ -773,8 +773,18 @@ function importModal() {
     <div class="sbody">
       <div class="note">Колонки через точку с запятой:
         <code>sku;name;category;type;price;sale_price;stock;vat;active</code>.
-        Сопоставление идёт по артикулу: есть — обновляем, нет — создаём.
-        Битые строки пропускаются, остальные импортируются.</div>
+        Сопоставление идёт по артикулу (SKU). Битые строки пропускаются,
+        остальные импортируются.</div>
+      <label class="f">Режим (ТЗ 10.7)</label>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:10px">
+        <label><input type="radio" name="impMode" value="full" checked>
+          Полная карточка — есть SKU: обновить всё; нет — создать товар</label>
+        <label><input type="radio" name="impMode" value="prices_stock">
+          Только цены и остатки — не трогает название/категорию/тип,
+          новые SKU не создаёт</label>
+        <label><input type="radio" name="impMode" value="new_only">
+          Только новые — существующие SKU не трогает вовсе</label>
+      </div>
       <label class="f" for="csvFile">Файл CSV</label>
       <input class="t" type="file" id="csvFile" accept=".csv,text/csv">
       <label class="f" for="csvText">…или вставьте текстом</label>
@@ -798,8 +808,9 @@ function importModal() {
     const csv = $('#csvText').value.trim();
     if (!csv) return toast('Выберите файл или вставьте текст', true);
     const btn = $('#doImport'); btn.disabled = true; btn.textContent = 'Импортируем…';
+    const mode = $('input[name="impMode"]:checked').value;
     try {
-      const r = await api('/api/admin/products/import', { method: 'POST', body: { csv } });
+      const r = await api('/api/admin/products/import', { method: 'POST', body: { csv, mode } });
       $('#impResult').innerHTML = h`<div class="note">Создано: ${r.created}, обновлено: ${r.updated},
         пропущено: ${r.skipped.length}</div>` +
         (r.skipped.length ? h`<div class="note err"><b>Пропущенные строки:</b><br>

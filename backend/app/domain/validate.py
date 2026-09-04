@@ -565,5 +565,10 @@ SCHEMAS: dict[str, dict[str, Callable]] = {
     # ---- импорт CSV (ТЗ 10.7) ----
     "csvImport": {
         "csv": T.str_(min=1, max=2 * 1024 * 1024, trim=False),
+        # required=False + default: старые вызовы без поля режима не
+        # ломаются — ведут себя как раньше, единственным известным
+        # способом ("full").
+        "mode": T.enum_(["full", "prices_stock", "new_only"],
+                       required=False, default="full"),
     },
 }

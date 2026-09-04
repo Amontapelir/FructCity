@@ -24,7 +24,7 @@ __all__ = [
     "admin_product", "category_out", "zone_out", "product_sanity", "promo_sanity",
     "order_closed_for_edits", "packing_list_html",
     "revenue_by_period", "daily_revenue", "orders_by_status", "orders_by_slot",
-    "CSV_COLUMNS", "csv_cell", "parse_csv", "import_products",
+    "CSV_COLUMNS", "csv_cell", "parse_csv", "import_products", "IMPORT_MODES",
 ]
 
 
@@ -452,17 +452,78 @@ def _strict_number(v: Any) -> float:
         return math.nan
 
 
+IMPORT_MODES = ("full", "prices_stock", "new_only")
+
+
+def _import_prices_stock(row: Mapping[str, str], exist: dict[str, Any] | None,
+                         now_iso: Callable[[], str]) -> dict[str, Any]:
+    """Режим «цены и остатки» (ТЗ 10.7): только цена/акция/остаток/НДС
+    у СУЩЕСТВУЮЩЕГО товара. Карточку (название, категория, тип) не
+    трогает и новых товаров не создаёт — для этого есть `new_only`."""
+    if exist is None:
+        raise ValueError("товар с таким SKU не найден — режим не создаёт новые")
+
+    price = _loose_number(row.get("price"))
+    if not math.isfinite(price) or price <= 0:
+        raise ValueError("некорректная цена")
+    sale_raw = row.get("sale_price")
+    sale = None if sale_raw == "" else _loose_number(sale_raw)
+    if sale is not None and (not math.isfinite(sale) or sale <= 0 or sale >= price):
+        raise ValueError("некорректная акционная цена")
+    stock = _loose_number(row.get("stock"))
+    if not math.isfinite(stock) or stock < 0:
+        raise ValueError("некорректный остаток")
+    vat = _strict_number(row.get("vat"))
+    if vat not in (0, 10, 20):
+        raise ValueError("НДС может быть 0, 10 или 20")
+
+    is_weighted = exist.get("type") != "unit"
+    exist.update({
+        "price": 0 if is_weighted else price,
+        "price_per_kg": price if is_weighted else 0,
+        "sale_price": sale, "stock": stock,
+        "vat_rate": int(vat), "updated_at": now_iso(),
+    })
+    return {"updated": True}
+
+
 def import_products(state: dict[str, Any], *, next_id: Callable[[str], int],
                     now_iso: Callable[[], str],
-                    rows: Sequence[Mapping[str, str]]) -> dict[str, Any]:
-    """Импорт строк CSV в каталог. Одна битая строка не должна валить
-    весь импорт (ТЗ 10.7) — отказ по строке уходит в `skipped`."""
+                    rows: Sequence[Mapping[str, str]],
+                    mode: str = "full") -> dict[str, Any]:
+    """Импорт строк CSV в каталог (ТЗ 10.7). Одна битая строка не должна
+    валить весь импорт — отказ по строке уходит в `skipped`.
+
+    Три режима сопоставления по SKU (`IMPORT_MODES`):
+
+    - ``full`` — есть SKU: карточка обновляется целиком; нет — создаётся.
+      Прежнее (и единственное до этой задачи) поведение.
+    - ``prices_stock`` — только цена/акция/остаток/НДС у существующих;
+      новые товары не создаются (см. `_import_prices_stock`).
+    - ``new_only`` — только добавление; существующий SKU не трогается —
+      уходит в `skipped` с понятной причиной, это не ошибка формата.
+    """
+    if mode not in IMPORT_MODES:
+        raise ValueError(f"неизвестный режим импорта: {mode}")
+
     cat_ids = {c.get("id") for c in state.get("categories") or []}
     result: dict[str, Any] = {"created": 0, "updated": 0, "skipped": []}
 
     for row in rows:
         sku_for_error = row.get("sku") or "(без SKU)"
         try:
+            exist = next((p for p in state.get("products") or []
+                         if str(p.get("sku", "")).lower() == str(row.get("sku") or "").lower()),
+                        None)
+
+            if mode == "prices_stock":
+                _import_prices_stock(row, exist, now_iso)
+                result["updated"] += 1
+                continue
+
+            if mode == "new_only" and exist is not None:
+                raise ValueError("уже есть в каталоге — режим добавляет только новые")
+
             rtype = row.get("type") if row.get("type") in ("unit", "weighted", "preorder") else None
             if not rtype:
                 raise ValueError("неизвестный тип")
@@ -496,9 +557,8 @@ def import_products(state: dict[str, Any], *, next_id: Callable[[str], int],
                 "slug": "", "image_key": "", "emoji": "", "description": "",
             })
 
-            # ТЗ 10.7 — сопоставление по SKU: есть — обновляем, нет — создаём
-            exist = next((p for p in state.get("products") or []
-                         if str(p.get("sku", "")).lower() == data["sku"].lower()), None)
+            # full (и создание в new_only) — сопоставление по SKU:
+            # есть — обновляем, нет — создаём.
             now = now_iso()
             if exist is not None:
                 exist.update({
