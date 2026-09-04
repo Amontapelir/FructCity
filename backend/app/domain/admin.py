@@ -237,7 +237,7 @@ def orders_by_status(orders: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]
     # Порядок — как в жизни заказа, отменённые в конец. Незнакомые
     # статусы не выбрасываем, а дописываем в конец: иначе заказ с
     # испорченным статусом исчезал бы из подсчёта незаметно.
-    known = list(C.STATUS_FLOW) + ["cancelled"]
+    known = ["awaiting_delivery_quote"] + list(C.STATUS_FLOW) + ["cancelled"]
     extra = sorted(s for s in count if s not in known)
     order = known + extra
     return [{"status": s, "label": C.STATUS_LABEL.get(s, s), "count": count[s]}

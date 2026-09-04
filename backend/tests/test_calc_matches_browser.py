@@ -190,7 +190,9 @@ class CalcMatchesBrowser(unittest.TestCase):
         for method in ("cash", "card_courier", "sbp", "online"):
             cases.append(("isPrepaid", [method], C.is_prepaid(method)))
             cases.append(("paymentLabel", [method], C.payment_label(method)))
-        for status in C.STATUS_FLOW:
+        # awaiting_delivery_quote (ТЗ 5.2, ROADMAP 2.12) намеренно вне
+        # STATUS_FLOW — цикл по нему её не задел бы молча.
+        for status in list(C.STATUS_FLOW) + ["awaiting_delivery_quote"]:
             cases.append(("customerCanCancel", [status], C.customer_can_cancel(status)))
         self.compare(cases)
 
@@ -201,6 +203,7 @@ class CalcMatchesBrowser(unittest.TestCase):
             {"status": "new", "payment_method": "online", "payment_status": "paid"},
             {"status": "assembling", "payment_method": "sbp", "payment_status": "paid"},
             {"status": "delivered", "payment_method": "cash", "payment_status": "paid"},
+            {"status": "awaiting_delivery_quote", "payment_method": "cash", "payment_status": "pending"},
         ]
         self.compare([("allowedTransitions", [o], C.allowed_transitions(o)) for o in orders])
 

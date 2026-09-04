@@ -1045,6 +1045,12 @@ function paintOrder(o) {
         h`<div>${new Date(x.at).toLocaleString('ru-RU')} — ${x.label}
           <span class="muted">(${x.actor})</span>${x.comment ? ' · ' + esc(x.comment) : ''}</div>`)}</div>
 
+      ${o.status === 'awaiting_delivery_quote' ? raw(h`<div class="frow" style="margin-top:10px">
+        <div><label class="f" for="dq_cost">Стоимость доставки (ТЗ 5.2)</label>
+          <input class="t" id="dq_cost" type="number" min="0" step="1" placeholder="Согласовано с клиентом"></div>
+        <div style="align-self:flex-end"><button class="btn sm" id="setDeliveryQuote">Согласовать</button></div>
+      </div>`) : ''}
+
       <div class="mfoot">
         <a class="btn gh sm" href="/api/admin/orders/${o.id}/packing-list" target="_blank"
            rel="noopener" style="text-decoration:none;line-height:1.7">Лист сборки</a>
@@ -1095,6 +1101,16 @@ function paintOrder(o) {
       paintOrder(r.order);
     } catch (e) { toast(errText(e), true); }
   });
+  const dq = $('#setDeliveryQuote');
+  if (dq) dq.onclick = async () => {
+    const cost = Number($('#dq_cost').value);
+    if (!(cost >= 0)) return toast('Введите стоимость доставки', true);
+    try {
+      const r = await api(`/api/admin/orders/${o.id}/delivery-quote`,
+        { method: 'POST', body: { cost } });
+      toast('Доставка согласована'); paintOrder(r.order); if (S.page === 'orders') pageOrders();
+    } catch (e) { toast(errText(e), true); }
+  };
   const ns = $('#nextStatus');
   if (ns) ns.onclick = async () => {
     try {
